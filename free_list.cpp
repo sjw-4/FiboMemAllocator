@@ -74,7 +74,17 @@ bool SegmentHeader::CheckValid() {
 /* FUNCTIONS FOR CLASS FreeList */
 /*--------------------------------------------------------------------------*/
 
+FreeList::FreeList() {
+	head = nullptr;
+}
+
+FreeList::FreeList(SegmentHeader* _segment) {
+	head = nullptr;
+	Add(_segment);
+}
+
 FreeList::FreeList(void* addr, size_t _size) {
+	head = nullptr;
 	Add(new (addr) SegmentHeader(_size));
 }
 

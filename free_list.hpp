@@ -66,13 +66,16 @@ public:
 class FreeList {
 
  private:
-	 SegmentHeader* forDestructor;
 	 
 
 public:
   SegmentHeader* head;
 
-  FreeList(void* addr, size_t _size); 
+  FreeList();
+
+  FreeList(SegmentHeader* _segment);
+
+  FreeList(void* addr, size_t _size);
   /* This function initializes a new free-list. */
 
   ~FreeList(); 
