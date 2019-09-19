@@ -25,6 +25,7 @@
 
 #include <cstdlib>
 #include "free_list.hpp"
+#include <vector>
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
@@ -50,9 +51,13 @@ class MyAllocator {
 
 	 Addr p;
 	 Addr initP;	//Where address where std::malloc() was called, used for destructor
-	 //size_t freeSpace;
 	 size_t basicBlockSize;
-	 FreeList *fl;
+	 std::vector <FreeList*> fls;
+	 int getFibNum(int f);	//returns smalles fibo number greater than f
+	 int fiboToN(int f);	//input fibo number, tells you which fibo number it is 1|1, 2|2, 3|3, 4|5, 5|8,...
+	 int nToFibo(int n);	//input which fibo number you want, returns fibo (invers of fiboToN())
+	 SegmentHeader* splitSeg(SegmentHeader* curSeg, int requestedBlocks);
+	 bool combineSegs();	//Returns true if segments were combined, false if not
   
  public:
   MyAllocator(size_t _basic_block_size, size_t _size); 
@@ -79,7 +84,9 @@ class MyAllocator {
   /* Frees the section of physical memory previously allocated 
      using ’Malloc’. Returns true if everything ok. */ 
 
-  size_t memAtAddr(Addr _a);	//Used for testing purposes, includes header in size
+  void dumpFls();		//For debugging, REMOVE BEFORE SUBMIT
+
+  void checkFls();
 };
 
 #endif 
