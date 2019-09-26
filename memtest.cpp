@@ -26,6 +26,7 @@
 #include<string.h>
 #include<sys/time.h>
 #include<assert.h>
+#include <stdlib.h>
 
 #include "my_allocator.hpp"
 
@@ -90,6 +91,10 @@ int main(int argc, char * argv[]) {
   
   size_t block_size = 1024; /* 1kB -- CHANGE THIS! */
   size_t mem_size = 1024 * block_size; /* 1MB -- CHANGE THIS! */
+  if(argc >= 2) {
+	block_size = atol(argv[1]);
+    mem_size = atol(argv[2]);
+  }
   
   ackerman_main(block_size, mem_size);
 
@@ -193,7 +198,6 @@ int ackerman(int a, int b) {
     
   }
   else {
-    cout << "testing" << endl;
 
     /* Fill the allocated memory with a value. 
        This same value will be used later for testing. 
