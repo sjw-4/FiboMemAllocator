@@ -42,6 +42,8 @@ public:
   bool is_free;
   SegmentHeader* prev;
   SegmentHeader* next;
+  char lr;
+  char inherit;
 
   SegmentHeader(size_t _length, bool _is_free = true);
   
@@ -66,13 +68,16 @@ public:
 class FreeList {
 
  private:
-	 SegmentHeader* forDestructor;
 	 
 
 public:
   SegmentHeader* head;
 
-  FreeList(void* addr, size_t _size); 
+  FreeList();
+
+  FreeList(SegmentHeader* _segment);
+
+  FreeList(void* addr, size_t _size);
   /* This function initializes a new free-list. */
 
   ~FreeList(); 
