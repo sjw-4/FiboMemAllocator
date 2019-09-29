@@ -1,85 +1,33 @@
-/* 
-    File: my_allocator.hpp
-
-	Author: Samuel Wilkins IV
-			Department of Computer Science
-			Texas A&M University
-	Date  : 9/16/19
-
-    Modified:
-
-*/
-
-#ifndef _my_allocator_hpp_                   // include file only once
+#ifndef _my_allocator_hpp_
 #define _my_allocator_hpp_
-
-/*--------------------------------------------------------------------------*/
-/* DEFINES */
-/*--------------------------------------------------------------------------*/
-
-/* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* INCLUDES */
-/*--------------------------------------------------------------------------*/
 
 #include <cstdlib>
 #include "free_list.hpp"
+#include <vector>
 
-/*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */ 
-/*--------------------------------------------------------------------------*/
-
-typedef void * Addr; 
-
-/*--------------------------------------------------------------------------*/
-/* FORWARDS */ 
-/*--------------------------------------------------------------------------*/
-
-/* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* CLASS   MyAllocator */
-/*--------------------------------------------------------------------------*/
+typedef void* Addr;
 
 class MyAllocator {
+private:
+	Addr initP;		//adress used as argument for malloc()
+	size_t basicBlockSize;
+	std::vector<FreeList*> fls;
 
- private:
+	SegmentHeader* splitSegment(SegmentHeader* _toSplit, int _reqBlocks);
+	SegmentHeader* combineSegment(SegmentHeader* _toComine);
 
-  // YOU MAY NEED TO ADD YOUR OWN DATA STRUCTURES HERE.
+	int getFibNum(int f);	//returns smalles fibo number greater than f
+	int lengthToFlIndex(int f);	//input fibo number, tells you which fibo number it is 1|1, 2|2, 3|3, 4|5, 5|8,...
+	int flIndexToLength(int n);	//input which fibo number you want, returns fibo (invers of fiboToN())
+public:
+	MyAllocator(size_t _basic_block_size, size_t _size);
+	~MyAllocator();
 
-	 Addr p;
-	 Addr initP;	//Where address where std::malloc() was called, used for destructor
-	 //size_t freeSpace;
-	 size_t basicBlockSize;
-	 FreeList *fl;
-  
- public:
-  MyAllocator(size_t _basic_block_size, size_t _size); 
-  /* This function initializes the memory allocator and makes a portion of 
-     ’_size’ bytes available. The allocator uses a ’_basic_block_size’ as 
-     its minimal unit of allocation. 
-     NOTE: In the old days one used 'unsigned int' for the size. The C
-     Standards Committee has added the 'size_t' data type to ensure to 
-     represent memory sizes. This makes the code more portable. Depending
-     on the architecture, 'size_t' may or may not be the same 
-     as 'unsigned int'. 
-  */ 
+	Addr Malloc(size_t _length);
+	bool Free(Addr _a);
 
-  ~MyAllocator(); 
-  /* This function returns any allocated memory to the operating system. 
-  */ 
-
-  Addr Malloc(size_t _length); 
-  /* Allocate _length number of bytes of free memory and returns the 
-     address of the allocated portion. Returns nullptr when out of memory. 
-  */ 
-
-  bool Free(Addr _a); 
-  /* Frees the section of physical memory previously allocated 
-     using ’Malloc’. Returns true if everything ok. */ 
-
-  size_t memAtAddr(Addr _a);	//Used for testing purposes, includes header in size
+	//FOR DEBUG, REMOVE BEFORE SUBMIT
+	void dumpFls();
 };
 
-#endif 
+#endif
