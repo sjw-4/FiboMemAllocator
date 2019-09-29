@@ -1,112 +1,103 @@
-/* 
-    File: free_list.cpp
+/*
+	File: free_list.hpp
 
-    Author: Samuel Wilkins IV
-            Department of Computer Science
-            Texas A&M University
-    Date  : 9/16/19
+	Author: Samuel Wilkins IV
+			Department of Computer Science
+			Texas A&M University
+	Date  : 9/28/19
 
-    Modified: 
-
-    This file contains the implementation of the class FreeList.
+	Modified: quite a bit, actually redid all 4 files from scratch (yes, completely from scratch, none of that easy ctrl-c ctrl-v stuff) on 9/28 becuase of some unrelenting segfault. that was "fun"
 
 */
 
-/*--------------------------------------------------------------------------*/
-/* DEFINES */
-/*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* INCLUDES */
-/*--------------------------------------------------------------------------*/
-
-#include <iostream>
 #include "free_list.hpp"
 
-/*--------------------------------------------------------------------------*/
-/* NAME SPACES */ 
-/*--------------------------------------------------------------------------*/
-
 using namespace std;
-/* I know, it's a bad habit, but this is a tiny program anyway... */
 
-/*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */ 
-/*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* CONSTANTS */
-/*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* FORWARDS */
-/*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
-/* FUNCTIONS FOR CLASS SegmentHeader */
-/*--------------------------------------------------------------------------*/
-
-SegmentHeader::SegmentHeader(size_t _length, bool _is_free) {
-  length = _length;
-  is_free = _is_free;
-  cookie = COOKIE_VALUE;
-  next = nullptr; prev = nullptr;
+////////Segment Header///////////////
+SegmentHeader::SegmentHeader(size_t _length) {	//Initializes the SegmentHeader, sets variables appropriately
+	length = _length;
+	cookie = COOKIE_VALUE;
+	next = nullptr; prev = nullptr;
+	lr = NULL; inherit = NULL;
+}
+SegmentHeader::~SegmentHeader() {				//Makes the SegmentHeader variables all null, helps with avioding false-positives during combineSegments in MyAllocator
+	next = nullptr; prev = nullptr;
+	length = NULL;
+	lr = NULL; inherit = NULL;
+	is_free = NULL;
 }
 
-SegmentHeader::~SegmentHeader() {
-}
+//getters, self explanatory
+size_t SegmentHeader::getLength() { return length; }
+bool SegmentHeader::getIsFree() { return is_free; }
+SegmentHeader* SegmentHeader::getPrev() { return prev; }
+SegmentHeader* SegmentHeader::getNext() { return next; }
+char SegmentHeader::getLR() { return lr; }
+char SegmentHeader::getInherit() { return inherit; }
 
+//setters, self explanatory
+void SegmentHeader::setLength(size_t _length) { length = _length; }
+void SegmentHeader::setIsFree(bool _is_free) { is_free = _is_free; }
+void SegmentHeader::setPrev(SegmentHeader* _prev) { prev = _prev; }
+void SegmentHeader::setNext(SegmentHeader* _next) { next = _next; }
+void SegmentHeader::setLR(char _lr) { lr = _lr; }
+void SegmentHeader::setInherit(char _inherit) { inherit = _inherit; }
 
-bool SegmentHeader::CheckValid() {
+bool SegmentHeader::CheckValid() {		//Checks if the SH is valid
 	if (cookie != COOKIE_VALUE) return false;
 	else return true;
 }
+////////END SEGMENT HEADER///////////////
 
-/*--------------------------------------------------------------------------*/
-/* FUNCTIONS FOR CLASS FreeList */
-/*--------------------------------------------------------------------------*/
 
-FreeList::FreeList(void* addr, size_t _size) {
-	Add(new (addr) SegmentHeader(_size));
+
+////////FREE LIST///////////////
+FreeList::FreeList(size_t _flSize) {	//Constructor, sets value for flSize which is unchangable (because once MyAllocator is constructed, the freelists should stay at the same index)
+	head = nullptr;
+	flSize = _flSize;
 }
 
-FreeList::~FreeList() {
-}
+//getters, self explanatory
+SegmentHeader* FreeList::getHead() { return head; }
+size_t FreeList::getSize() { return flSize; }
 
-bool FreeList::Add(SegmentHeader * _segment) {
-	if (head == nullptr) {
+bool FreeList::Add(SegmentHeader* _segment) {
+	if (!_segment->CheckValid() || _segment->getLength() != flSize)	return false;	//returns false if the segment isn't valid or is the incorrect size for this list
+	if (head == nullptr)															//makes segment head if fl is empty
+		head = _segment;
+	else {																			//makes segment head and makes previous head the next pointer for this segment
+		_segment->setNext(head);
+		head->setPrev(_segment);
 		head = _segment;
 	}
-	else {
-		head->prev = _segment;
-		_segment->next = head;
-		head = _segment;
-	}
+	_segment->setIsFree(true);														//since the segment has been added to the freeList, it sets is_free to true
 	return true;
 }
-
-bool FreeList::Remove(SegmentHeader * _segment) {
-	if (_segment == head && head->next == nullptr) {
-		head = nullptr;
+bool FreeList::Remove(SegmentHeader* _segment) {		//Removes passed segment from the freeList
+	if (!_segment->CheckValid() || _segment->getLength() != flSize || head == nullptr) return false;	//returns false if the segment is invalid, is the incorrect size for this list, or if the list is empty
+	if (_segment == head) {								//if the segment is the head it makes the next segment the new head
+		head = head->getNext();
+		_segment->setNext(nullptr);
+		_segment->setPrev(nullptr);
+		_segment->setIsFree(false);
+		return true;
 	}
-	else if (_segment == head) {
-		_segment->next->prev = nullptr;
-		head = head->next;
+	SegmentHeader* temp = head;							//assigns temp to what the current head is
+	while (temp != _segment && temp != nullptr) {		//makes sure the segment is in fact in this list
+		temp = temp->getNext();
 	}
-	else if (_segment->next == nullptr) {
-		_segment->prev->next = nullptr;
+	if (temp == nullptr)								//returns false if the segment isn't in this list
+		return false;
+	if (_segment->getNext() == nullptr) {				//if segment is at the back of the fl
+		_segment->getPrev()->setNext(nullptr);
 	}
-	else {
-		_segment->next->prev = _segment->prev;
-		_segment->prev->next = _segment->next;
+	else {												//if segment is in the middle of the fl
+		_segment->getPrev()->setNext(_segment->getNext());
+		_segment->getNext()->setPrev(_segment->getPrev());
 	}
+	_segment->setNext(nullptr);							//clears the prev and next of this segment and sets is_free to false
+	_segment->setNext(nullptr);
+	_segment->setIsFree(false);
 	return true;
 }
